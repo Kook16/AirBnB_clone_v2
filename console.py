@@ -10,7 +10,7 @@ from models.state import State
 from models.city import City
 from models.amenity import Amenity
 from models.review import Review
-
+from shlex import split
 
 class HBNBCommand(cmd.Cmd):
     """ Contains the functionality for the HBNB console"""
@@ -115,46 +115,39 @@ class HBNBCommand(cmd.Cmd):
 
     def do_create(self, args):
         """ Create an object of any class"""
+        tokens = args.split(' ')
         if not args:
             print("** class name missing **")
             return
-        
-        parts = args.split()
-        class_name = parts[0]
-        params = parts[1:]
-
-        if class_name not in HBNBCommand.classes:
+        elif tokens[0] not in HBNBCommand.classes:
             print("** class doesn't exist **")
             return
-        
-        new_instance = HBNBCommand.classes[class_name]()
 
-        # Parse parameters
-        parsed_params = {}
-        for param in params:
-            try:
-                key, value = param.split('=')
-                # replace '_' with ' '
-                if '_' in key:
-                    key = key.replace('_', ' ')
-
-                # handle different value types
-                if value.startswith('"') and value.endswith('"'):
-                    # handle escaped quotes
-                    value = value[1:-1].replace('\\"', '"')
-                elif '.' in value:
-                    value = float(value)
-                else:
-                    value = int(value)
-
-                setattr(new_instance, key, value)
-            
-            except (ValueError, IndexError):
-                pass
+        new_instance = HBNBCommand.classes[tokens[0]]()
+        if len(tokens) > 1:
+            kvlist = (tokens[1:])
+            for kv in kvlist:
+                if '=' in kv:
+                    item = kv.split('=', 1)
+                    key = item[0]
+                    value = item[1]
+                    if value[0] == value[-1] == '"':
+                        value = split(value)[0].replace("_", " ")
+                        setattr(new_instance, key, str(value))
+                    else:
+                        try:
+                            value = int(value)
+                            setattr(new_instance, key, value)
+                        except Exception:
+                            try:
+                                value = float(value)
+                                setattr(new_instance, key, value)
+                            except Exception:
+                                continue
 
         new_instance.save()
         print(new_instance.id)
-        storage.save()
+        # storage.save()
 
     def help_create(self):
         """ Help information for the create method """
@@ -231,27 +224,19 @@ class HBNBCommand(cmd.Cmd):
         """ Shows all objects, or all objects of a class"""
         print_list = []
 
-        FS = storage.all()
+
         if args:
             args = args.split(' ')[0]  # remove possible trailing args
-            # if args not in HBNBCommand.classes:
-            #     print("** class doesn't exist **")
-            #     return
-            # if storage.__class__.__name__ == 'DBStorage':
-            #     all_instances = storage.all(HBNBCommand.classes[args]).values()
-            #     print_list.extend(str(obj) for obj in all_instances)
-
-            # elif storage.__class__.__name__ == 'FileStorage':
-            for k, v in FS.items():
+            if args not in HBNBCommand.classes:
+                print("** class doesn't exist **")
+                return
+            objects_dict = storage.all(HBNBCommand.classes[args])
+            for k, v in objects_dict.items():
                 if k.split('.')[0] == args:
                     print_list.append(str(v))
         else:
-            # if storage.__class__.__name__ == 'DBStorage':
-            #     for cls in HBNBCommand.classes.values():
-            #         all_instances = storage.all(cls).values()
-            #         print_list.extend(str(obj) for obj in all_instances)
-            # elif storage.__class__.__name__ == 'FileStorage':
-            for k, v in FS.items():
+            objects_dict = storage.all()
+            for k, v in objects_dict.items():
                 print_list.append(str(v))
 
         print(print_list)
