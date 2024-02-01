@@ -1,0 +1,80 @@
+#!/usr/bin/python3
+'''Fabric script that distributes an archive to my web servers'''
+from fabric.api import env, put, sudo, task, runs_once
+from datetime import datetime
+from os.path import exists
+
+env.hosts = ['34.207.155.182', '18.204.14.80']
+env.user = 'ubuntu'
+env.key_filename = '/home/kok/.ssh/id_rsa'
+
+@task
+def do_pack():
+    '''function that generates a .tar archive'''
+    date = datetime.now().strftime('%Y%m%d%H%M%S')
+    archive_name = f'web_static_{date}.tgz'
+    try:
+        local('mkdir -p version')
+        local(f'tar -czvf version/{archive_name} web_static')
+        return f'versions/{archive_name}'
+    except Exception:
+        return None
+
+
+@task
+def do_deploy(archive_path):
+    '''Deploy func'''
+    if not exists(archive_path):
+        return False
+    
+    # archive_path = /path/to/yor/archive.tar.gz
+    try:
+        # Upload archive to /tmp/ dir on web server
+        put(archive_path, '/tmp/')
+
+        # gets you archive.tar.gz
+        filename = archive_path.split('/')[-1]
+        # gets you /path/to/your/
+        folder_name = filename.split('.')[0]
+
+        release_path = '/data/web_static/releases/' + folder_name
+
+        sudo('mkdir -p {}'.format(release_path))
+
+        sudo('tar -xzf /tmp/{} -C {}'.format(filename, release_path))
+
+        # Delete archive from web server
+        sudo('rm /tmp/{}'.format(filename))
+
+        # delete the symbolic link /data/web_static/current
+        sudo('rm -f /data/web_static/current')
+
+
+        # Create a new symbolic link /data/web_static/current
+
+        sudo ('ln -s {} /data/web_static/current'.format(release_path))
+
+        return True
+    
+    except Exception as e:
+        print(e)
+        return False
+
+
+@task
+@runs_once
+def deploy():
+    '''Create and distribute an archive to web server
+    '''
+    try:
+        # cal the do_pack() and store the path of the created archive
+        archive_path = do_pack()
+
+        # return false if no archive has been created
+        if not archive_path:
+            return False
+        
+        # Call the do_deploy(archive_path) function
+        return do_deploy(archive_path)
+    except Exception:
+        return False
