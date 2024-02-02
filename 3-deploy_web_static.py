@@ -1,80 +1,70 @@
 #!/usr/bin/python3
-'''Fabric script that distributes an archive to my web servers'''
-from fabric.api import env, put, sudo, task, runs_once
+"""
+distributes an archive to your web servers
+"""
+from os import path
 from datetime import datetime
-from os.path import exists
+from fabric.api import local
+from fabric.api import env, run, put, task
+
 
 env.hosts = ['34.207.155.182', '18.204.14.80']
-env.user = 'ubuntu'
-env.key_filename = '/home/kok/.ssh/id_rsa'
+
 
 @task
 def do_pack():
-    '''function that generates a .tar archive'''
-    date = datetime.now().strftime('%Y%m%d%H%M%S')
-    archive_name = f'web_static_{date}.tgz'
+    """
+    function that generates a .tar archive
+    """
+    date = datetime.now().strftime("%Y%m%d%H%M%S")
+    arch_name = "web_static_{}.tgz".format(date)
     try:
-        local('mkdir -p version')
-        local(f'tar -czvf version/{archive_name} web_static')
-        return f'versions/{archive_name}'
+        local('mkdir -p versions')
+        local('tar -cvzf versions/{} web_static'.format(arch_name))
+        return "versions/{}".format(arch_name)
     except Exception:
         return None
 
 
 @task
 def do_deploy(archive_path):
-    '''Deploy func'''
-    if not exists(archive_path):
+    """
+    Deploy function
+    """
+    if not path.exists(archive_path):
         return False
-    
-    # archive_path = /path/to/yor/archive.tar.gz
     try:
-        # Upload archive to /tmp/ dir on web server
+
+        arch_tgz = archive_path.split('/')[-1]
+        arch = arch_tgz.split('.')[0]
+        arch_dir = '/data/web_static/releases/{}/'.format(arch)
+
         put(archive_path, '/tmp/')
+        run('mkdir -p {}'.format(arch_dir))
+        run('tar -xzf /tmp/{} -C {}'.format(arch_tgz, arch_dir))
+        run('rm /tmp/{}'.format(arch_tgz))
+        run('sudo mv {}web_static/* {}'.format(arch_dir, arch_dir))
+        run('rm -rf {}web_static'.format(arch_dir))
+        run('rm -rf /data/web_static/current')
+        run('ln -s {} /data/web_static/current'.format(arch_dir))
 
-        # gets you archive.tar.gz
-        filename = archive_path.split('/')[-1]
-        # gets you /path/to/your/
-        folder_name = filename.split('.')[0]
-
-        release_path = '/data/web_static/releases/' + folder_name
-
-        sudo('mkdir -p {}'.format(release_path))
-
-        sudo('tar -xzf /tmp/{} -C {}'.format(filename, release_path))
-
-        # Delete archive from web server
-        sudo('rm /tmp/{}'.format(filename))
-
-        # delete the symbolic link /data/web_static/current
-        sudo('rm -f /data/web_static/current')
-
-
-        # Create a new symbolic link /data/web_static/current
-
-        sudo ('ln -s {} /data/web_static/current'.format(release_path))
-
+        print('New version deployed!')
         return True
-    
+
     except Exception as e:
         print(e)
         return False
 
 
 @task
-@runs_once
 def deploy():
-    '''Create and distribute an archive to web server
-    '''
+    """
+    Create and distribute an archive to web server
+    """
     try:
-        # cal the do_pack() and store the path of the created archive
         archive_path = do_pack()
-
-        # return false if no archive has been created
-        if not archive_path:
+        if archive_path is None:
             return False
-        
-        # Call the do_deploy(archive_path) function
         return do_deploy(archive_path)
     except Exception:
         return False
