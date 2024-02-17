@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """
-distributes an archive to your web servers
+Deltes out-date archives
 """
 from os import path
 from datetime import datetime
@@ -68,3 +68,34 @@ def deploy():
         return do_deploy(archive_path)
     except Exception:
         return False
+
+@task
+def do_clean(number=0):
+    '''deletes out-of-date archives
+
+    Args:
+        number (int, optional): number is the number of archives, including 
+         the most recent, to keep
+
+       Default to 0
+       if number is 0 or 1, keep only the most recent version of your archiv       if number is 2, keep the most recent and second most recent versions of your archive
+    '''
+    num = 1
+
+    try:
+        num = int(number)
+    except ValueError:
+        pass
+
+    # local dir clean up
+    local_version_directory = "versions"
+    if num in (0, 1):
+        local("cd {} && ls -t | head -n -1 | sudo xargs rm -rf"
+              .format(local_version_directory, num))
+    elif num >= 2:
+        local("cd {} && ls -t | head -n -{} | sudo xargs rm -fr"
+              .format(local_version_directory, num))
+
+    remote_version_directory = "/data/web_static/releases/*"
+    run("ls -dt {} | head -n -{} | xargs rm -fr"
+        .format(remote_version_dir, num))
