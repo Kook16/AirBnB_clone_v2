@@ -1,33 +1,45 @@
 #!/usr/bin/python3
 """This module defines a class to manage file storage for hbnb clone"""
 import json
+# from models.base_model import BaseModel
+# from models.user import User
+# from models.place import Place
+# from models.state import State
+# from models.city import City
+# from models.amenity import Amenity
+# from models.review import Review
+
 
 
 class FileStorage:
     """This class manages storage of hbnb models in JSON format"""
     __file_path = 'file.json'
     __objects = {}
+    # __valid_cls = [BaseModel, User, State, Amenity, Place, City, Review]
 
     def all(self, cls=None):
         """Returns a dictionary of models currently in storage"""
         if not cls:
             return FileStorage.__objects
-        my_dict = {}
-        for key, value in FileStorage.__objects.items():
-            if isinstance(value, cls):
-                my_dict[key] = value
-        return my_dict
+        filtered_obj = {}
+        all_obj = self.__objects
+        for key, val in all_obj.items():
+            # class_name, id = key.split('.')
+            if type(val) == cls:
+                filtered_obj[key] = val
+        return filtered_obj
 
     def new(self, obj):
         """Adds new object to storage dictionary"""
         self.all().update({obj.to_dict()['__class__'] + '.' + obj.id: obj})
 
     def delete(self, obj=None):
-        '''deletes obj from __objects'''
-        if obj:
-            key = obj.__class__.__name__ + "." + obj.id
+        '''deletes obj from __objects if its inside '''
+        if not obj:
+            pass
+        else:
+            key = obj.__class__.__name__ + '.' + obj.id
             del self.__objects[key]
-            self.save()
 
     def save(self):
         """Saves storage dictionary to file"""
@@ -61,8 +73,3 @@ class FileStorage:
                         self.all()[key] = classes[val['__class__']](**val)
         except FileNotFoundError:
             pass
-
-    def close(self):
-        '''call reload() method for deserializing the JSON file to objects
-        '''
-        self.reload()
