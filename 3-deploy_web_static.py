@@ -8,7 +8,7 @@ from fabric.api import local
 from fabric.api import env, run, put, task
 
 
-env.hosts = ['34.207.155.182', '18.204.14.80']
+env.hosts = ['54.174.69.148', '18.204.20.114']
 
 
 @task
