@@ -37,7 +37,7 @@ class DBStorage:
 
         Args:
             cls : class name.
-
+nnn
         Returns:
         dictionary: key = <class-name>.<object-id>
                     value = object
@@ -91,5 +91,3 @@ class DBStorage:
         """close the transactional resources
         """
         self.__session.close()
-        # self.Session.close()
-        # self.__session.remove()
