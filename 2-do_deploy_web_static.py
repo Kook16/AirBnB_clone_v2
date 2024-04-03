@@ -2,7 +2,7 @@
 '''Fabric script that distributes an archive to my web servers'''
 from fabric.api import env, put, sudo, run
 from os import path
-env.hosts = ['34.207.155.182', '18.204.14.80']
+env.hosts = ['54.174.69.148', '18.204.20.114']
 
 
 def do_deploy(archive_path):
