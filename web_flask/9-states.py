@@ -6,6 +6,7 @@ from models.state import State
 
 app = Flask(__name__)
 
+
 @app.route('/states', strict_slashes=False)
 def state_cities(id=None):
     """Displays a HTML page with a list of City objects linked to the State"""

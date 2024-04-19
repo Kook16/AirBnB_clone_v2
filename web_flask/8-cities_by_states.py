@@ -12,6 +12,7 @@ def teardown_db(exception):
     """ Teardown method """
     storage.close()
 
+
 @app.route('/cities_by_states', strict_slashes=False)
 def display_cities_by_states():
     """ Displays a HTML page with a list of states and their cities """

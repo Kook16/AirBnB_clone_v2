@@ -17,7 +17,7 @@ def hbnb_filters():
     amenities = storage.all(Amenity).values()
     sorted_amenities = sorted(amenities, key=lambda amenity: amenity.name)
     return render_template('10-hbnb_filters.html', states=sorted_states,
-    amenities=sorted_amenities)
+                           amenities=sorted_amenities)
 
 
 @app.teardown_appcontext
